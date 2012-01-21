@@ -16,6 +16,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 class MainHandler(webapp.RequestHandler):
     def get(self):
         upload_url = blobstore.create_upload_url('/upload')
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write('<html><body>')
         self.response.out.write('<form action="%s" method="POST" enctype="multipart/form-data">' % upload_url)
         self.response.out.write("""Upload File: <input type="file" name="file"><br> <input type="submit" 
@@ -23,6 +24,7 @@ class MainHandler(webapp.RequestHandler):
 
 class InputHandler(webapp.RequestHandler):
     def get(self):
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write('<html><body>')
         self.response.out.write('<form action="/store" method="POST">')
         self.response.out.write("""Upload File: <textarea name="file" cols=80 rows=25></textarea><br> <input type="submit" 
@@ -43,6 +45,7 @@ class FileHandler(webapp.RequestHandler):
         
         # Get the file's blob key
         #self.redirect('/serve/%s' % blob_key)
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write(blob_key)
 
 class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
@@ -53,12 +56,14 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
 
 class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
     def get(self, resource):
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         resource = str(urllib.unquote(resource))
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info, content_type="text/plain; charset=utf-8")
 
 class ListHandler(webapp.RequestHandler):
     def get(self):
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write('<html><body>')
         self.response.out.write('count: ' + str(blobstore.BlobInfo.all().count()))
 
