@@ -6,6 +6,7 @@ from google.appengine.api import files
 
 import os
 import urllib
+import calendar
 
 from google.appengine.ext import blobstore
 from google.appengine.ext import webapp
@@ -57,6 +58,11 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
 class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
     def get(self, resource):
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+        #Calendar future = Calendar.getInstance();
+        #future.add(Calendar.YEAR, +1);
+        #self.response.setDateHeader("Expires", future.getTimeInMillis());
+        self.response.headers["Cache-control"] = "max-age=30";
+        self.response.headers['Content-Encoding'] = 'gzip'
         resource = str(urllib.unquote(resource))
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info, content_type="text/plain; charset=utf-8")
