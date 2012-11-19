@@ -8,6 +8,12 @@ import os
 import urllib
 import calendar
 
+
+import StringIO
+import gzip
+
+import hashlib
+
 from google.appengine.ext import blobstore
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import blobstore_handlers
@@ -33,21 +39,32 @@ class InputHandler(webapp.RequestHandler):
 
 class FileHandler(webapp.RequestHandler):
     def post(self):
-        file_name = files.blobstore.create(mime_type='plain/text')
+        content = self.request.get('file')
+        encodedContent = content.encode('utf-8')
+        filehash_name = hashlib.sha1(encodedContent).hexdigest()
+        file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
+
 
         # Open the file and write to it
         with files.open(file_name, 'a') as f:
-              content = self.request.get('file')
-              f.write(content.encode('utf-8'))
+              # this should do the trick
+              out = StringIO.StringIO()
+              gf = gzip.GzipFile(fileobj=out, mode='w')
+              gf.write(encodedContent)
+              gf.close()
+              f.write(out.getvalue())
 
         # Finalize the file. Do this before attempting to read it.
         files.finalize(file_name)
-        blob_key = files.blobstore.get_blob_key(file_name)
         
         # Get the file's blob key
         #self.redirect('/serve/%s' % blob_key)
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
-        self.response.out.write(blob_key)
+        self.response.out.write(filehash_name)
+    def options(self):
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+        self.response.out.write("Food");
+        pass
 
 class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     def post(self):
