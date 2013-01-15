@@ -39,11 +39,9 @@ class InputHandler(webapp.RequestHandler):
 
 class FileHandler(webapp.RequestHandler):
     def post(self):
-        content = self.request.get('file')
-        encodedContent = content.encode('utf-8')
+        encodedContent = self.request.get('file').encode('utf-8')
         filehash_name = hashlib.sha1(encodedContent).hexdigest()
         file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
-
 
         # Open the file and write to it
         with files.open(file_name, 'a') as f:
