@@ -39,6 +39,7 @@ class InputHandler(webapp.RequestHandler):
 
 class FileHandler(webapp.RequestHandler):
     def post(self):
+        # we want a better way of getting 
         encodedContent = self.request.get('file').encode('utf-8')
         filehash_name = hashlib.sha1(encodedContent).hexdigest()
         file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
@@ -63,6 +64,30 @@ class FileHandler(webapp.RequestHandler):
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write("Food");
         pass
+
+class TestFileHandler(webapp.RequestHandler):
+    def post(self):
+        # we want a better way of getting 
+        encodedContent = self.request.get('file').encode('utf-8')
+        filehash_name = hashlib.sha1(encodedContent).hexdigest()
+        
+        # this should do the trick
+        out = StringIO.StringIO()
+        gf = gzip.GzipFile(fileobj=out, mode='w')
+        gf.write(encodedContent)
+        gf.close()
+        self.response.write(out.getvalue())
+
+
+        # Get the file's blob key
+        #self.redirect('/serve/%s' % blob_key)
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+        self.response.out.write(filehash_name)
+    def options(self):
+        self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+        self.response.out.write("Food");
+        pass
+
 
 class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     def post(self):
@@ -95,6 +120,7 @@ def main():
            ('/upload', UploadHandler),
            ('/input', InputHandler),
            ('/store', FileHandler),
+           ('/test-store', TestFileHandler),
            ('/list', ListHandler),
            ('/serve/([^/]+)?', ServeHandler),
           ], debug=True)
