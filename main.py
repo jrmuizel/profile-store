@@ -68,15 +68,9 @@ class FileHandler(webapp.RequestHandler):
 class TestFileHandler(webapp.RequestHandler):
     def post(self):
         # we want a better way of getting 
-        encodedContent = self.request.get('file').encode('utf-8')
-        filehash_name = hashlib.sha1(encodedContent).hexdigest()
-        
-        # this should do the trick
-        out = StringIO.StringIO()
-        gf = gzip.GzipFile(fileobj=out, mode='w')
-        gf.write(encodedContent)
-        gf.close()
-        self.response.write(out.getvalue())
+        encodedContent = self.request.body_file
+        gf = gzip.GzipFile(fileobj=encodedContent, mode='r')
+        self.response.write(gf.read())
 
 
         # Get the file's blob key
