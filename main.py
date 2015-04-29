@@ -65,14 +65,30 @@ class FileHandler(webapp.RequestHandler):
         self.response.out.write("Food");
         pass
 
-class TestFileHandler(webapp.RequestHandler):
+class CompressedFileHandler(webapp.RequestHandler):
     def post(self):
         # we want a better way of getting 
         encodedContent = self.request.body_file
         gf = gzip.GzipFile(fileobj=encodedContent, mode='r')
-        self.response.write(gf.read())
+        BLOCKSIZE = 65536
+        hasher = hashlib.sha1()
+        buf = gf.read(BLOCKSIZE)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = gf.read(BLOCKSIZE)
+        
+        encodedContent.seek(0)
 
-
+        # create the cloud store file and write the content we received to it
+        filehash_name = hasher.hexdigest()
+        file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
+        with files.open(file_name, 'a') as f:
+            buf = encodedContent.read(BLOCKSIZE)
+            while len(buf) > 0:
+                f.write(buf)
+                buf = encodedContent.read(BLOCKSIZE)
+ 
+        files.finalize(file_name)
         # Get the file's blob key
         #self.redirect('/serve/%s' % blob_key)
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
@@ -114,7 +130,7 @@ def main():
            ('/upload', UploadHandler),
            ('/input', InputHandler),
            ('/store', FileHandler),
-           ('/test-store', TestFileHandler),
+           ('/compressed-store', CompressedFileHandler),
            ('/list', ListHandler),
            ('/serve/([^/]+)?', ServeHandler),
           ], debug=True)
