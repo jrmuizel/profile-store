@@ -2,12 +2,10 @@
 #
 from __future__ import with_statement
 
-from google.appengine.api import files
-
 import os
 import urllib
 import calendar
-
+import cloudstorage
 
 import StringIO
 import gzip
@@ -42,10 +40,10 @@ class FileHandler(webapp.RequestHandler):
         # we want a better way of getting 
         encodedContent = self.request.get('file').encode('utf-8')
         filehash_name = hashlib.sha1(encodedContent).hexdigest()
-        file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
 
         # Open the file and write to it
-        with files.open(file_name, 'a') as f:
+        with cloudstorage.open('/profile-store/' + filehash_name, mode='w', content_type='plain/text', \
+                options={'x-goog-acl': 'public-read', 'content-encoding': 'gzip'}) as f:
               # this should do the trick
               out = StringIO.StringIO()
               gf = gzip.GzipFile(fileobj=out, mode='w')
@@ -53,9 +51,6 @@ class FileHandler(webapp.RequestHandler):
               gf.close()
               f.write(out.getvalue())
 
-        # Finalize the file. Do this before attempting to read it.
-        files.finalize(file_name)
-        
         # Get the file's blob key
         #self.redirect('/serve/%s' % blob_key)
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
@@ -81,14 +76,13 @@ class CompressedFileHandler(webapp.RequestHandler):
 
         # create the cloud store file and write the content we received to it
         filehash_name = hasher.hexdigest()
-        file_name = files.gs.create('/gs/profile-store/' + filehash_name, mime_type='plain/text', acl='public-read',content_encoding='gzip')
-        with files.open(file_name, 'a') as f:
+        with cloudstorage.open('/profile-store/' + filehash_name, mode='w', content_type='plain/text', \
+                options={'x-goog-acl': 'public-read', 'content-encoding': 'gzip'}) as f:
             buf = encodedContent.read(BLOCKSIZE)
             while len(buf) > 0:
                 f.write(buf)
                 buf = encodedContent.read(BLOCKSIZE)
  
-        files.finalize(file_name)
         # Get the file's blob key
         #self.redirect('/serve/%s' % blob_key)
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
@@ -97,7 +91,6 @@ class CompressedFileHandler(webapp.RequestHandler):
         self.response.headers.add_header("Access-Control-Allow-Origin", "*")
         self.response.out.write("Food");
         pass
-
 
 class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     def post(self):
