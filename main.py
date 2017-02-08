@@ -63,7 +63,7 @@ class FileHandler(webapp.RequestHandler):
 class CompressedFileHandler(webapp.RequestHandler):
     def post(self):
         # we want a better way of getting 
-        encodedContent = self.request.body_file
+        encodedContent = self.request.body_file_seekable
         gf = gzip.GzipFile(fileobj=encodedContent, mode='r')
         BLOCKSIZE = 65536
         hasher = hashlib.sha1()
