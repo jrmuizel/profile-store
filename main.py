@@ -77,7 +77,7 @@ class CompressedFileHandler(webapp.RequestHandler):
         # create the cloud store file and write the content we received to it
         filehash_name = hasher.hexdigest()
         with cloudstorage.open('/profile-store/' + filehash_name, mode='w', content_type='plain/text', \
-                options={'x-goog-acl': 'public-read', 'content-encoding': 'gzip'}) as f:
+                options={'x-goog-acl': 'public-read', 'content-encoding': 'gzip', 'cache-control': 'max-age: 365000000, immutable'}) as f:
             buf = encodedContent.read(BLOCKSIZE)
             while len(buf) > 0:
                 f.write(buf)
